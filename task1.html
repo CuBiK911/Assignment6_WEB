@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assignment 6 - Task 1: Selector Detective</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }
+        h1 { text-align: center; color: #333; margin-bottom: 30px; }
+        
+        .house-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding-top: 80px;
+            position: relative;
+        }
+        .roof {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 450px solid transparent;
+            border-right: 450px solid transparent;
+            border-bottom: 80px solid #8B4513;
+        }
+        .house { 
+            background: #8B4513; 
+            border-radius: 0 0 10px 10px;
+            padding: 20px;
+        }
+        .floor { 
+            background: #fff; 
+            border-radius: 5px; 
+            padding: 15px; 
+            margin: 10px 0;
+            display: flex;
+            gap: 20px;
+        }
+        .floor-label { 
+            position: absolute; 
+            left: -35px; 
+            font-weight: bold; 
+            color: #555;
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+        }
+        .room { 
+            background: #e8f4fd; 
+            border-radius: 8px; 
+            padding: 10px; 
+            flex: 1;
+            min-width: 200px;
+        }
+        .room-name { 
+            font-weight: bold; 
+            color: #333; 
+            margin-bottom: 10px; 
+            font-size: 14px;
+        }
+        .guests-container { 
+            display: flex; 
+            gap: 8px; 
+            flex-wrap: wrap; 
+        }
+        .guest-card { 
+            background: #fff; 
+            border-radius: 8px; 
+            padding: 8px; 
+            width: 100px; 
+            box-shadow: 0 1px 5px rgba(0,0,0,0.1); 
+            position: relative;
+        }
+        .guest-card.highlighted { border: 3px solid #ff6b6b; background: #fff0f0; }
+        .avatar { width: 50px; height: 50px; border-radius: 50%; margin: 0 auto 5px; display: block; }
+        .clothing-ring { 
+            position: absolute; 
+            top: 5px; 
+            left: 50%; 
+            transform: translateX(-50%);
+            width: 54px; 
+            height: 54px; 
+            border-radius: 50%; 
+            border: 3px solid; 
+            pointer-events: none;
+        }
+        .guest-name { font-size: 11px; font-weight: bold; text-align: center; color: #333; }
+        .guest-time { font-size: 10px; text-align: center; color: #666; }
+        .guest-things { font-size: 14px; text-align: center; min-height: 18px; }
+        .aitu-badge { 
+            position: absolute; 
+            top: -5px; 
+            right: -5px; 
+            background: #4caf50; 
+            color: white; 
+            font-size: 9px; 
+            padding: 2px 4px; 
+            border-radius: 3px; 
+            font-weight: bold;
+        }
+        .cases-panel { 
+            background: #fff; 
+            border-radius: 10px; 
+            padding: 20px; 
+            max-width: 900px; 
+            margin: 20px auto;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .case-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
+        .case-btn { 
+            padding: 8px 12px; 
+            background: #2196F3; 
+            color: white; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            font-size: 12px;
+        }
+        .result-display { 
+            background: #f0f0f0; 
+            padding: 15px; 
+            border-radius: 5px; 
+            min-height: 60px;
+            font-size: 14px; 
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <h1>Selector Detective</h1>
+    <div class="house-container">
+        <div class="roof"></div>
+        <div class="house" id="house"></div>
+    </div>
+    
+    <div class="cases-panel">
+        <h2>Cases</h2>
+        <div class="case-buttons" id="caseButtons"></div>
+        <div class="result-display" id="resultDisplay">Click a case button to find guests!</div>
+    </div>
+
+    <script>
+        const partyData = {
+            rooms: [
+                {name: "Balcony", floor: 2}, {name: "Hall", floor: 2},
+                {name: "Kitchen", floor: 1}, {name: "Living room", floor: 1}
+            ],
+            guests: [
+                {name: "Aigerim", gender: "female", color: "green", time: "20:45", aitu: true, things: ["phone"], room: "Balcony", pos: 1},
+                {name: "Aliya", gender: "female", color: "pink", time: "21:15", aitu: false, things: [], room: "Balcony", pos: 2},
+                {name: "Madina", gender: "female", color: "purple", time: "22:10", aitu: true, things: ["phone", "glasses"], room: "Balcony", pos: 3},
+                {name: "Ivan", gender: "male", color: "red", time: "20:10", aitu: false, things: ["cup"], room: "Balcony", pos: 4},
+                {name: "Arman", gender: "male", color: "yellow", time: "20:35", aitu: false, things: ["bag"], room: "Hall", pos: 1},
+                {name: "Sophia", gender: "female", color: "purple", time: "21:20", aitu: true, things: [], room: "Hall", pos: 2},
+                {name: "Dias", gender: "male", color: "green", time: "19:45", aitu: true, things: ["phone", "bag"], room: "Hall", pos: 3},
+                {name: "Bekzat", gender: "male", color: "purple", time: "20:55", aitu: true, things: ["cup"], room: "Hall", pos: 4},
+                {name: "Aruzhan", gender: "female", color: "blue", time: "21:50", aitu: true, things: [], room: "Hall", pos: 5},
+                {name: "Saule", gender: "female", color: "green", time: "21:25", aitu: false, things: ["cup"], room: "Hall", pos: 6},
+                {name: "Nurlan", gender: "male", color: "red", time: "19:40", aitu: true, things: ["phone"], room: "Kitchen", pos: 1},
+                {name: "Emma", gender: "female", color: "blue", time: "20:15", aitu: false, things: ["cup"], room: "Kitchen", pos: 2},
+                {name: "Timur", gender: "male", color: "green", time: "21:05", aitu: true, things: ["crumbs", "glasses"], room: "Kitchen", pos: 3},
+                {name: "Sergey", gender: "male", color: "yellow", time: "20:50", aitu: true, things: [], room: "Kitchen", pos: 4},
+                {name: "Yerlan", gender: "male", color: "red", time: "21:40", aitu: false, things: ["glasses", "bag"], room: "Kitchen", pos: 5},
+                {name: "Kamila", gender: "female", color: "green", time: "20:05", aitu: false, things: ["cup"], room: "Kitchen", pos: 6},
+                {name: "Daniel", gender: "male", color: "blue", time: "19:55", aitu: false, things: [], room: "Living room", pos: 1},
+                {name: "Inkar", gender: "female", color: "green", time: "20:20", aitu: false, things: ["cup"], room: "Living room", pos: 2},
+                {name: "Natasha", gender: "female", color: "yellow", time: "20:30", aitu: false, things: ["bag"], room: "Living room", pos: 3},
+                {name: "Askar", gender: "male", color: "blue", time: "21:00", aitu: true, things: [], room: "Living room", pos: 4},
+                {name: "Zarina", gender: "female", color: "purple", time: "21:10", aitu: false, things: ["phone", "bag", "cup"], room: "Living room", pos: 5}
+            ]
+        };
+
+        function getThingIcons(things) {
+            const icons = {phone:'', bag:'🎒', glasses:'', cup:'☕', crumbs:''};
+            return things.map(t => icons[t] || '').join(' ');
+        }
+
+        function getAvatarUrl(name, gender) {
+            return `https://api.dicebear.com/9.x/open-peeps/svg?seed=${name}&gender=${gender}`;
+        }
+
+        function buildPage() {
+            $('#house').empty();
+            
+            const $floor2 = $(`<div class="floor" style="position:relative;"><div class="floor-label">Floor 2</div></div>`);
+            ['Balcony', 'Hall'].forEach(roomName => {
+                const room = partyData.rooms.find(r => r.name === roomName);
+                const $room = $(`<div class="room" data-room="${room.name}" data-floor="${room.floor}">
+                    <div class="room-name">${room.name}</div>
+                    <div class="guests-container"></div>
+                </div>`);
+                
+                partyData.guests.filter(g => g.room === room.name).sort((a,b) => a.pos - b.pos).forEach(g => {
+                    $room.find('.guests-container').append(`
+                        <div class="guest-card" data-name="${g.name}" data-gender="${g.gender}" data-color="${g.color}" data-time="${g.time}" 
+                             data-aitu="${g.aitu}" data-things="${g.things.join(',')}" data-room="${g.room}" data-pos="${g.pos}">
+                            <div class="clothing-ring" style="border-color:${g.color}"></div>
+                            <img class="avatar" src="${getAvatarUrl(g.name, g.gender)}">
+                            <div class="guest-name">${g.name}</div>
+                            <div class="guest-time">${g.time}</div>
+                            <div class="guest-things">${getThingIcons(g.things)}</div>
+                            ${g.aitu ? '<span class="aitu-badge">AITU</span>' : ''}
+                        </div>
+                    `);
+                });
+                $floor2.append($room);
+            });
+            $('#house').append($floor2);
+            
+            const $floor1 = $(`<div class="floor" style="position:relative;"><div class="floor-label">Floor 1</div></div>`);
+            ['Kitchen', 'Living room'].forEach(roomName => {
+                const room = partyData.rooms.find(r => r.name === roomName);
+                const $room = $(`<div class="room" data-room="${room.name}" data-floor="${room.floor}">
+                    <div class="room-name">${room.name}</div>
+                    <div class="guests-container"></div>
+                </div>`);
+                
+                partyData.guests.filter(g => g.room === room.name).sort((a,b) => a.pos - b.pos).forEach(g => {
+                    $room.find('.guests-container').append(`
+                        <div class="guest-card" data-name="${g.name}" data-gender="${g.gender}" data-color="${g.color}" data-time="${g.time}" 
+                             data-aitu="${g.aitu}" data-things="${g.things.join(',')}" data-room="${g.room}" data-pos="${g.pos}">
+                            <div class="clothing-ring" style="border-color:${g.color}"></div>
+                            <img class="avatar" src="${getAvatarUrl(g.name, g.gender)}">
+                            <div class="guest-name">${g.name}</div>
+                            <div class="guest-time">${g.time}</div>
+                            <div class="guest-things">${getThingIcons(g.things)}</div>
+                            ${g.aitu ? '<span class="aitu-badge">AITU</span>' : ''}
+                        </div>
+                    `);
+                });
+                $floor1.append($room);
+            });
+            $('#house').append($floor1);
+        }
+
+        const cases = [
+            { n:1, l:"Who is in the hall?", c: () => $('.guest-card[data-room="Hall"]') },
+            { n:2, l:"Who is dressed in yellow or purple?", c: () => $('.guest-card[data-color="yellow"], .guest-card[data-color="purple"]') },
+            { n:3, l:"Which AITU students are upstairs?", c: () => $('.guest-card[data-aitu="true"]').filter(function(){ return $(this).closest('.room').data('floor')==2; }) },
+            { n:4, l:"Who has glasses or a bag?", c: () => $('.guest-card').filter(function(){ const t=$(this).data('things'); return t.includes('glasses')||t.includes('bag'); }) },
+            { n:5, l:"Who came with nothing at all?", c: () => $('.guest-card[data-things=""]') },
+            { n:6, l:"Who has a phone but no bag?", c: () => $('.guest-card').filter(function(){ const t=$(this).data('things'); return t.includes('phone')&&!t.includes('bag'); }) },
+            { n:7, l:"Who arrived between 20:30 and 21:00, both times included?", c: () => $('.guest-card').filter(function(){ const[h,m]=$(this).data('time').split(':').map(Number); return (h*60+m)>=(20*60+30) && (h*60+m)<=(21*60+0); }) },
+            { n:8, l:"Who arrived after 21:00 and is not an AITU student?", c: () => $('.guest-card').filter(function(){ const[h,m]=$(this).data('time').split(':').map(Number); return (h>21||(h==21&&m>0)) && $(this).data('aitu')!==true; }) },
+            { n:9, l:"Who stands right next to Askar?", c: () => { const a=$('.guest-card[data-name="Askar"]'); return a.prev('.guest-card').add(a.next('.guest-card')); } },
+            { n:10, l:"Who stands last in each room?", c: () => $('.guests-container .guest-card:last-child') },
+            { n:11, l:"Who stands third in each room?", c: () => $('.guests-container .guest-card:nth-child(3)') },
+            { n:12, l:"Who stands after Timur in his room?", c: () => $('.guest-card[data-name="Timur"]').nextAll('.guest-card') },
+            { n:13, l:"Who stands right before someone in black?", c: () => $('.guest-card[data-color="black"]').prev('.guest-card') },
+            { n:14, l:"In which room is Aruzhan?", c: () => $('.guest-card[data-name="Aruzhan"]').closest('.room') },
+            { n:15, l:"Which rooms have fewer than 6 guests?", c: () => $('.room').filter(function(){ return $(this).find('.guest-card').length<6; }) },
+            { n:16, l:"In which rooms does somebody have a cup, but nobody wears glasses?", c: () => $('.room').filter(function(){ const c=$(this).find('.guest-card'); return c.filter(function(){return $(this).data('things').includes('cup');}).length>0 && !c.filter(function(){return $(this).data('things').includes('glasses');}).length>0; }) },
+            { n:17, l:"Who came first to each room?", c: () => $('.guests-container .guest-card:first-child') },
+            { n:18, l:"Miras, an AITU student in blue, comes at 21:20 with his phone and joins Askar and Inkar, standing between them. Let him appear smoothly.", c: () => { 
+                const askar=$('.guest-card[data-name="Askar"]');
+                const newCard=$('<div class="guest-card" style="display:none;" data-name="Miras" data-gender="male" data-color="blue" data-time="21:20" data-aitu="true" data-things="phone" data-room="Living room" data-pos="3.5"><div class="clothing-ring" style="border-color:blue"></div><img class="avatar" src="https://api.dicebear.com/9.x/open-peeps/svg?seed=Miras&gender=male"><div class="guest-name">Miras</div><div class="guest-time">21:20</div><div class="guest-things">📱</div><span class="aitu-badge">AITU</span></div>');
+                askar.before(newCard); 
+                newCard.fadeIn(800); 
+                partyData.guests.push({name:"Miras",gender:"male",color:"blue",time:"21:20",aitu:true,things:["phone"],room:"Living room",pos:3.5});
+                return newCard;
+            }},
+            { n:19, l:"Natasha says goodbye and goes home. Her card fades away and disappears from the page.", c: () => { 
+                const n=$('.guest-card[data-name="Natasha"]'); 
+                n.fadeOut(800,function(){$(this).remove();}); 
+                partyData.guests=partyData.guests.filter(g=>g.name!=='Natasha'); 
+                return n; 
+            }},
+            { n:20, l:"Who took the cake? The thief was downstairs, came after 21:00 but before the cake disappeared, has crumbs but no cup, and stood right next to an AITU student.", c: () => {
+                return $('.guest-card').filter(function(){
+                    const card=$(this), floor=card.closest('.room').data('floor'), [h,m]=card.data('time').split(':').map(Number), mins=h*60+m, things=card.data('things');
+                    if(floor!=1 || mins<=21*60 || mins>=21*60+30) return false;
+                    if(!things.includes('crumbs') || things.includes('cup')) return false;
+                    const prevA=card.prev('.guest-card').data('aitu')===true, nextA=card.next('.guest-card').data('aitu')===true;
+                    return prevA || nextA;
+                });
+            }}
+        ];
+
+        function runCase(num) {
+            if(num!==18 && num!==19) {
+                buildPage();
+            }
+            
+           
+            $('.guest-card, .room').removeClass('highlighted');
+            
+            const c = cases.find(x=>x.n===num);
+            const res = c.c();
+            res.addClass('highlighted');
+            
+            res.filter('.guest-card').each(function() {
+                $(this).animate({marginTop:'-10px'}, 200).animate({marginTop:'0px'}, 200);
+            });
+            
+            let names = res.is('.guest-card') ? res.map(function(){return $(this).data('name');}).get() : res.map(function(){return $(this).data('room');}).get();
+            $('#resultDisplay').html(`<strong>Case ${num}: ${c.l}</strong><br>Found: ${names.length}<br>${names.join(', ')}`);
+        }
+
+        $(document).ready(()=>{
+            buildPage();
+            cases.forEach(c => $('#caseButtons').append(`<button class="case-btn" onclick="runCase(${c.n})">Case ${c.n}</button>`));
+        });
+    </script>
+</body>
+</html>
